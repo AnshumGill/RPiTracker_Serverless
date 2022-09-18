@@ -1,1 +1,1 @@
-var api_gateway_url = "https://ugbcjsuo4i.execute-api.ap-south-1.amazonaws.com/prod";
+var api_gateway_url = "https://ugbcjsuo4i.execute-api.ap-south-1.amazonaws.com/prod/get-info";
