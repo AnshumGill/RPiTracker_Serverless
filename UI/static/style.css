@@ -7,3 +7,7 @@ body {
 	background: linear-gradient(to right, #faaca8, #ddd6f3);
 	font-family: "Poppins", sans-serif;
 }
+
+table {
+	background-color: rgba(33, 37, 41, 0.5) !important;
+}

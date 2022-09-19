@@ -16,6 +16,16 @@ variable "source_code_zip" {
   description = "Filename for Source Code zip file"
   default     = "layers/rpitracker.zip"
 }
+variable "getter_source_code_path" {
+  type        = string
+  description = "Path for Source code"
+  default     = "layers/getter"
+}
+variable "getter_source_code_zip" {
+  type        = string
+  description = "Filename for Source Code zip file"
+  default     = "layers/getter.zip"
+}
 variable "layer_path" {
   type        = string
   description = "Path for Lamda Layer"

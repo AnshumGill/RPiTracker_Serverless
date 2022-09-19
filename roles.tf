@@ -35,3 +35,28 @@ resource "aws_iam_role" "api_gateway_role" {
   }
   EOF
 }
+
+resource "aws_iam_role_policy" "lambda_policy" {
+  name = "lambda_policy"
+  role = aws_iam_role.lambda_role.id
+  policy = jsonencode(
+    {
+      Version : "2012-10-17",
+      Statement : [{
+        Effect : "Allow",
+        Action : [
+          "dynamodb:BatchGetItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:BatchWriteItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource : "*"
+      }]
+  })
+}

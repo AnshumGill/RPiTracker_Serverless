@@ -4,9 +4,12 @@ import asyncio
 from bs4 import BeautifulSoup
 import re
 import os
-import json
+import boto3
+from time import time
 from constants import *
 
+dynamodb=boto3.resource('dynamodb')
+table=dynamodb.Table(dynamodb_table)
 root = logging.getLogger()
 if root.handlers:
     for handler in root.handlers:
@@ -44,9 +47,9 @@ async def get_info(client,vendor,url):
             price=float(price[1:] if price[0]=="." else price)
             price=price if vendor.gst_inc else price*1.18
         vendor.add_raspi(RaspPi(name,price,avail,vendor.urls.index(url)))
-        print(f"Name - {name}, Price - {price}, Avail - {avail}")
+        logging.info(f"Name - {name}, Price - {price}, Avail - {avail}")
     else:
-        print(f"Status Code - {resp.status_code} From {vendor.name}")
+        logging.info(f"Status Code - {resp.status_code} From {vendor.name}")
 
 async def scrape_url(vendors):
     async with httpx.AsyncClient() as client:
@@ -56,16 +59,31 @@ async def scrape_url(vendors):
                 tasks.append(asyncio.create_task(get_info(client,vendor,url)))
         await asyncio.gather(*tasks,return_exceptions=True)
 
+def add_entries(vendors):
+    for vendor in vendors:
+        for raspi in vendor.raspi:
+            item={
+                'model':raspi.model,
+                'price':int(raspi.price),
+                'available':raspi.available,
+                'url':vendor.urls[raspi.url_ref],
+                'vendor':vendor.name,
+                'last_updated':int(time())
+            }
+            resp=table.put_item(Item=item)
+            logging.debug(resp)
+
 def lambda_handler(event, context):
     asyncio.run(scrape_url(vendors))
     json_data=[v.toJSON() for v in vendors]
-    print(json_data)
+    logging.debug(json_data)
+    add_entries(vendors)
     return {
-        'statusCode': 200,
+        'statusCode': 204,
         'headers': {
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'OPTIONS,GET'
         },
-        'body': json.dumps(json_data)
+        'body': ""
     }

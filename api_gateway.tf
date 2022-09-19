@@ -35,9 +35,9 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   http_method             = aws_api_gateway_method.get_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.lambda_function.invoke_arn
+  uri                     = aws_lambda_function.lambda_getter_function.invoke_arn
   depends_on = [
-    aws_lambda_function.lambda_function
+    aws_lambda_function.lambda_getter_function
   ]
 }
 
@@ -58,6 +58,7 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.rest_api.id
   triggers = {
     redeployment = sha1(jsonencode([
+      aws_lambda_function.lambda_getter_function.id,
       aws_api_gateway_resource.get_info_resource.id,
       aws_api_gateway_method.get_method.id,
       aws_api_gateway_method_response.get_response.id,

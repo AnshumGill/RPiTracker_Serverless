@@ -2,7 +2,12 @@
 
 This is a serverless deployment for tracking Raspberry Pi 4 model B 4GB for India Region.
 
-This app is deployed using Netlify for UI and S3+API Gateway+Lambda as backend.
+This app is deployed using Netlify for UI and S3+API Gateway+Lambda as backend and DynamoDB as Database.
+
+There are 2 Lambda Functions.
+
+1. Is responsible for scraping URL's and updating DynamoDB data every 15 minutes (using eventbrigde)
+2. Is responsible for getting data from DynamoDB and is executed through API call from API Gateway.
 
 ## Prerequisites
 

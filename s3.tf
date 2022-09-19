@@ -4,6 +4,12 @@ data "archive_file" "source_code" {
   output_path = var.source_code_zip
 }
 
+data "archive_file" "getter_source_code" {
+  type        = "zip"
+  source_dir  = var.getter_source_code_path
+  output_path = var.getter_source_code_zip
+}
+
 resource "aws_s3_bucket" "s3_bucket" {
   bucket = "tf-rpitracker-bucket"
   tags = {
@@ -32,6 +38,16 @@ resource "aws_s3_object" "source_code_in_bucket" {
   etag   = filemd5(var.source_code_zip)
   depends_on = [
     data.archive_file.source_code
+  ]
+}
+
+resource "aws_s3_object" "getter_source_code_in_bucket" {
+  bucket = aws_s3_bucket.s3_bucket.id
+  key    = "tf_getter.zip"
+  source = var.getter_source_code_zip
+  etag   = filemd5(var.getter_source_code_zip)
+  depends_on = [
+    data.archive_file.getter_source_code
   ]
 }
 

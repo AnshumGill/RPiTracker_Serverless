@@ -6,28 +6,28 @@ function populateData(url, id, loaderFlag) {
 		success: function (resp) {
 			fullData = "";
 			$.each(resp, function (index, element) {
-				var parsedElement = JSON.parse(element);
-				$.each(parsedElement.raspi, function (i, raspi) {
-					innerData = `
-                    <tr>
-                        <td>${parsedElement.name}</td>
-                        <td><a href="${parsedElement.urls[raspi.url_ref]}" class="text-reset" target="_blank">${raspi.model}</a></td>
-                        <td>₹${raspi.price}</td>
-                    `;
-					if (raspi.available) {
-						innerData += `
-                            <td class="text-success">${raspi.available}</td>
-                        `;
-					} else {
-						innerData += `
-                            <td class="text-danger">${raspi.available}</td>
-                        `;
-					}
+				var date = new Date(element.last_updated * 1000);
+				date = date.toLocaleString();
+				innerData = `
+                <tr>
+                    <td>${element.vendor}</td>
+                    <td><a href="${element.url}" class="text-reset" target="_blank">${element.model}</a></td>
+                    <td>₹${element.price}</td>
+                    <td>${date}</td>
+                `;
+				if (element.available) {
 					innerData += `
-                    </tr>
+                        <td class="text-success"><strong>${element.available}</strong></td>
                     `;
-					fullData += innerData;
-				});
+				} else {
+					innerData += `
+                        <td class="text-danger"><strong>${element.available}</strong></td>
+                    `;
+				}
+				innerData += `
+                </tr>
+                `;
+				fullData += innerData;
 			});
 			$(id).html(fullData);
 		},

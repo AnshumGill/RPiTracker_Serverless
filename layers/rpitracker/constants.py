@@ -40,3 +40,5 @@ vendors=[
 ]
 
 oos_strings=["out of stock","sold out"]
+
+dynamodb_table="tf_rpiTracker"
