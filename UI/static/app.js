@@ -5,15 +5,15 @@ function populateData(url, id, loaderFlag) {
 		dataType: "json",
 		success: function (resp) {
 			fullData = "";
+			var date;
 			$.each(resp, function (index, element) {
-				var date = new Date(element.last_updated * 1000);
+				date = new Date(element.last_updated * 1000);
 				date = date.toLocaleString();
 				innerData = `
                 <tr>
                     <td>${element.vendor}</td>
                     <td><a href="${element.url}" class="text-reset" target="_blank">${element.model}</a></td>
                     <td>₹${element.price}</td>
-                    <td>${date}</td>
                 `;
 				if (element.available) {
 					innerData += `
@@ -30,6 +30,7 @@ function populateData(url, id, loaderFlag) {
 				fullData += innerData;
 			});
 			$(id).html(fullData);
+			$("#last_updated").text(date);
 		},
 		complete: function () {
 			if (loaderFlag) {
