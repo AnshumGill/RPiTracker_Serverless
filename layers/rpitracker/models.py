@@ -1,5 +1,5 @@
 import json
-
+from re import sub
 # Class for HTML Element to scrape
 class HtmlElement:
     # Constructor
@@ -8,15 +8,39 @@ class HtmlElement:
         self.attr=attr
         self.val=val
         self.extra_elem=extra_elem
+        self.content=None
+
+    # Method to scrape content for HTML Element
+    def scrape_content(self,soup):
+        self.content=soup.find(self.tag,{self.attr:self.val})
+        if(self.content is not None):
+            if(self.extra_elem!=None):
+                self.content=self.content.find(self.extra_elem)
+            self.content=self.content.text.strip()
 
 # Class for Raspberry Pi
 class RaspPi:
     # Constructor
-    def __init__(self,model:str,price:float,available:str,url_ref:int) -> object:
-        self.model=model
-        self.price=price
-        self.available=available
+    def __init__(self,model:HtmlElement,price:HtmlElement,available:HtmlElement,url_ref:int,gst_inc=None) -> object:
+        self.model=model.content
+        self.price=price.content
+        self.available=available.content
         self.url_ref=url_ref
+        self.gst_inc=gst_inc
+        self.update_avail(["out of stock","sold out"])
+        self.update_price()
+
+    # Method to update availablity to Boolean type
+    def update_avail(self,oos_strings):
+        if('-' in self.available):
+            self.available=self.available.split('-')[0].strip()
+        self.available=not(self.available.lower() in oos_strings)
+
+    # Method to update price to appropriate format
+    def update_price(self):
+        self.price=sub("[^0-9.]","",self.price) # Removing all values except numbers and period
+        self.price=float(self.price[1:] if self.price[0]=="." else self.price) # Removing trailing period if exists
+        self.price=self.price if self.gst_inc else self.price*1.18 # Including GST%
     
     # Method to determine equality
     def __eq__(self,other):

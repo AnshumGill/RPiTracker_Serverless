@@ -2,56 +2,46 @@ import logging
 import httpx
 import asyncio
 from bs4 import BeautifulSoup
-import re
-import os
 import boto3
 from time import time
 from constants import *
+from config import *
+from telegram import Bot
 
 dynamodb=boto3.resource('dynamodb')
 table=dynamodb.Table(dynamodb_table)
+bot=Bot(token=telegram_token)
+
+# Resolving logging issues for AWS Lambda
 root = logging.getLogger()
 if root.handlers:
     for handler in root.handlers:
         root.removeHandler(handler)
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',level = logging.INFO, force=True)
 
-def dir_last_updated(folder):
-    return str(max(os.path.getmtime(os.path.join(root_path, f))
-                   for root_path, dirs, files in os.walk(folder)
-                   for f in files))
-
-def get_contents(soup,element):
-    elem=soup.find(element.tag,{element.attr:element.val})
-    if(elem is not None):
-        if(element.extra_elem!=None):
-            elem=elem.find(element.extra_elem)
-        elem=elem.text.strip()
-    else:
-        return None
-    return elem
-
-async def get_info(client,vendor,url):
+async def get_info(client:object,vendor:Vendor,url:str)->None:
+    '''
+        Async function to scrape URL and populate objects using information from page using BeautifulSoup
+    '''
     resp = await client.get(url,headers=headers,follow_redirects=True)
     if(resp.status_code==200):
         soup=BeautifulSoup(resp.content,'html5lib')
-        name=get_contents(soup,vendor.model_elem)
-        price=get_contents(soup,vendor.price_elem)
-        avail=get_contents(soup,vendor.stock_elem)
-        if(avail is not None):
-            if('-' in avail):
-                avail=avail.split('-')[0].strip()
-        avail=not(avail.lower() in oos_strings)
-        if(price is not None):
-            price=re.sub("[^0-9.]","",price)
-            price=float(price[1:] if price[0]=="." else price)
-            price=price if vendor.gst_inc else price*1.18
-        vendor.add_raspi(RaspPi(name,price,avail,vendor.urls.index(url)))
-        logging.info(f"Name - {name}, Price - {price}, Avail - {avail}")
+        vendor.model_elem.scrape_content(soup)
+        vendor.price_elem.scrape_content(soup)
+        vendor.stock_elem.scrape_content(soup)
+        temp_raspi=RaspPi(vendor.model_elem,vendor.price_elem,vendor.stock_elem,vendor.urls.index(url),vendor.gst_inc)
+        if(temp_raspi.available):
+            send_telegram_notification(vendor,temp_raspi)
+        vendor.add_raspi(temp_raspi)
+        logging.info(f"Name - {temp_raspi.model}, Price - {temp_raspi.price}, Avail - {temp_raspi.available}")
     else:
-        logging.info(f"Status Code - {resp.status_code} From {vendor.name}")
+        logging.warning(f"Status Code - {resp.status_code} From {vendor.name}")
 
-async def scrape_url(vendors):
+async def scrape_url(vendors:list)->None:
+    '''
+        Async function to iterate over all vendors and urls for those vendors to gather 
+        subtasks of get_info function
+    '''
     async with httpx.AsyncClient() as client:
         tasks=[]
         for vendor in vendors:
@@ -59,7 +49,18 @@ async def scrape_url(vendors):
                 tasks.append(asyncio.create_task(get_info(client,vendor,url)))
         await asyncio.gather(*tasks,return_exceptions=True)
 
-def add_entries(vendors):
+def send_telegram_notification(vendor:Vendor,raspi:RaspPi)->None:
+    '''
+        Function to send telegram notifications for the configured bot
+    '''
+    logging.info(f"Sending notification for {vendor.name}, {raspi.model}")
+    bot.send_message(text=f"{raspi.model} is available for {raspi.price} at {vendor.urls[raspi.url_ref]}",chat_id=chat_id)
+
+def add_entries(vendors:list)->None:
+    '''
+        Function to iterate over all vendor objects and all raspberry pi objects to add 
+        records inside DynamoDB
+    '''
     for vendor in vendors:
         for raspi in vendor.raspi:
             item={
@@ -73,7 +74,10 @@ def add_entries(vendors):
             resp=table.put_item(Item=item)
             logging.debug(resp)
 
-def lambda_handler(event, context):
+def lambda_handler(event, context)->dict:
+    '''
+        Function invoked by lambda function on AWS
+    '''
     asyncio.run(scrape_url(vendors))
     json_data=[v.toJSON() for v in vendors]
     logging.debug(json_data)

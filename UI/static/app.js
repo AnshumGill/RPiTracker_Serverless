@@ -4,6 +4,7 @@ function populateData(url, id, loaderFlag) {
 		type: "get",
 		dataType: "json",
 		success: function (resp) {
+			var model_length = 40;
 			fullData = "";
 			var date;
 			$.each(resp, function (index, element) {
@@ -12,7 +13,9 @@ function populateData(url, id, loaderFlag) {
 				innerData = `
                 <tr>
                     <td>${element.vendor}</td>
-                    <td><a href="${element.url}" class="text-reset" target="_blank">${element.model}</a></td>
+                    <td><a href="${element.url}" class="text-reset" target="_blank">${element.model.substring(0, model_length)}${
+					element.model.length > model_length ? "..." : ""
+				}</td>
                     <td>₹${element.price}</td>
                 `;
 				if (element.available) {
