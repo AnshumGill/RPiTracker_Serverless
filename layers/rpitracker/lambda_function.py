@@ -3,6 +3,7 @@ import httpx
 import asyncio
 from bs4 import BeautifulSoup
 import boto3
+from boto3.dynamodb.conditions import Attr
 from time import time
 from constants import *
 from config import *
@@ -30,8 +31,17 @@ async def get_info(client:object,vendor:Vendor,url:str)->None:
         vendor.price_elem.scrape_content(soup)
         vendor.stock_elem.scrape_content(soup)
         temp_raspi=RaspPi(vendor.model_elem,vendor.price_elem,vendor.stock_elem,vendor.urls.index(url),vendor.gst_inc)
-        if(temp_raspi.available):
+        previously_notified=table.scan(
+            Select="SPECIFIC_ATTRIBUTES",
+            FilterExpression=Attr("model").eq(temp_raspi.model),
+            ProjectionExpression="notified")['Items']
+        if(len(previously_notified) > 0 and len(previously_notified[0])>0):
+            previously_notified=previously_notified[0]['notified']
+        if(temp_raspi.available and not previously_notified):
             send_telegram_notification(vendor,temp_raspi)
+            temp_raspi.mark_notified(True)
+        if(not temp_raspi.available and previously_notified):
+            temp_raspi.mark_notified(False)
         vendor.add_raspi(temp_raspi)
         logging.info(f"Name - {temp_raspi.model}, Price - {temp_raspi.price}, Avail - {temp_raspi.available}")
     else:
@@ -69,6 +79,7 @@ def add_entries(vendors:list)->None:
                 'available':raspi.available,
                 'url':vendor.urls[raspi.url_ref],
                 'vendor':vendor.name,
+                'notified':raspi.notified,
                 'last_updated':int(time())
             }
             resp=table.put_item(Item=item)

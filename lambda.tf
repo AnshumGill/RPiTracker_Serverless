@@ -17,6 +17,7 @@ resource "aws_lambda_function" "lambda_scraper_function" {
   runtime           = "python3.9"
   layers            = [aws_lambda_layer_version.lambda_layer.arn]
   timeout           = 120
+  memory_size       = 512
   source_code_hash  = data.archive_file.source_code.output_base64sha256
 }
 

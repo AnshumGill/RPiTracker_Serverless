@@ -21,12 +21,13 @@ class HtmlElement:
 # Class for Raspberry Pi
 class RaspPi:
     # Constructor
-    def __init__(self,model:HtmlElement,price:HtmlElement,available:HtmlElement,url_ref:int,gst_inc=None) -> object:
+    def __init__(self,model:HtmlElement,price:HtmlElement,available:HtmlElement,url_ref:int,gst_inc=None,notified:bool=False) -> object:
         self.model=model.content
         self.price=price.content
         self.available=available.content
         self.url_ref=url_ref
         self.gst_inc=gst_inc
+        self.notified=notified
         self.update_avail(["out of stock","sold out"])
         self.update_price()
 
@@ -41,6 +42,10 @@ class RaspPi:
         self.price=sub("[^0-9.]","",self.price) # Removing all values except numbers and period
         self.price=float(self.price[1:] if self.price[0]=="." else self.price) # Removing trailing period if exists
         self.price=self.price if self.gst_inc else self.price*1.18 # Including GST%
+
+    # Notified or not
+    def mark_notified(self,val):
+        self.notified=val
     
     # Method to determine equality
     def __eq__(self,other):

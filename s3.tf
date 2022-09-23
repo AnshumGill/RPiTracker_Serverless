@@ -52,8 +52,8 @@ resource "aws_s3_object" "getter_source_code_in_bucket" {
 }
 
 resource "aws_s3_object" "lambda_layer_in_bucket" {
-  bucket = aws_s3_bucket.s3_bucket.id
-  key    = "tf_rpitrackerLayers.zip"
-  source = var.layer_path
-  etag   = filemd5(var.layer_path)
+  bucket      = aws_s3_bucket.s3_bucket.id
+  key         = "tf_rpitrackerLayers.zip"
+  source      = var.layer_path
+  source_hash = filemd5(var.layer_path)
 }
